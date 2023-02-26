@@ -70,6 +70,8 @@
 
   * [Grafana](frontend/grafana.md)
 
+  * [Mock-up](frontend/mockup.md)
+
 * Future Iterations
 
   * [Improvements](future-iterations/improvements.md)
