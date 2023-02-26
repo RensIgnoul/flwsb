@@ -1,6 +1,6 @@
 # Backend
 
-##  Testdata
+## Testdata
 
 Om de backend te testen moet deze gevuld worden met testdata.
 De AI studenten zijn modellen aan het trainen met [bestaande historische weerdata uit Duitsland](https://figshare.com/articles/dataset/PPNN_full_data_feather_format_/13516301/1). Ze baseren zich op de paper [Neural Networks for Postprocessing Ensemble Weather Forecasts](https://journals.ametsoc.org/view/journals/mwre/146/11/mwr-d-18-0187.1.xml) door Stephan Rasp and Sebastian Lerch. Om deze testdata in de InfluxDb database te krijgen wordt gebruik gemaakt van onderstaand [Python script](./assets/InfluxDBConnect.py). In dit gedeelte wordt de werking van dit script uitgelegd.
@@ -79,12 +79,15 @@ Met pandas kunnen verschillende databestanden ingeladen worden in dataframes. Hi
 De dataframe wordt hier toegewezen aan de 'data' variabele.
 
 Vanuit feather:
+
 ```
 data = pd.read_feather("../data/data_RL18.feather")
 data.station = pd.to_numeric(data.station, downcast = 'integer')
 data = data.drop(['sm_mean', 'sm_var'], axis=1)
 ```
+
 Enkele veelgebruikte functionaliteiten:
+
 ```
 data.columns --> returnt array van alle kolomnamen in de dataframe
 
@@ -101,7 +104,7 @@ data.mean() --> gemiddelde van waarden in dit object, 1 van de verschillende agg
 
 ### Schrijven naar InfluxDB
 
-De tijdsgebonden kolom wordt ingesteld als index (vb. date), en er wordt een _measurement aangemaakt, die dan bestaat uit meerdere _fields. Deze _fields worden gemapt aan de kolommen van de dataframe, en bevatten data voor alle gewenste features binnen een bepaalde tijdsperiode.
+De tijdsgebonden kolom wordt ingesteld als index (vb. date), en er wordt een \_measurement aangemaakt, die dan bestaat uit meerdere \_fields. Deze \_fields worden gemapt aan de kolommen van de dataframe, en bevatten data voor alle gewenste features binnen een bepaalde tijdsperiode.
 
 De token en organisatie worden mee gegeven en met een write-api kan zo tijdgebonden data doorgestuurd worden naar de bucket. In het geval van een dataframe, moet deze eerst nog omgevormd worden om door influxdb geaccepteerd te worden.
 
@@ -119,7 +122,6 @@ write_api.write(bucket = bucket,record= data_frame,data_frame_measurement_name='
 
 Met behulp van de [Flux](https://fluxcd.io/flux/) syntax, kunnen queries opgesteld worden om data uit een influxDB op te halen. Er wordt een tijdsrange ingesteld, alsook de measurements en fields die opgehaald moeten worden. Vervolgens kan dan opnieuw met influxdb_client een query gedaan worden naar de ifdb instance.
 
-
 ```python
 query= '''
 from(bucket: "weather-ap")
@@ -132,3 +134,39 @@ from(bucket: "weather-ap")
 client = InfluxDBClient(url="http://localhost:8086", token=my_token, org=my_org, debug=False)
 system_stats = client.query_api().query_data_frame(org=my_org, query=query)
 ```
+
+### Genereren van nieuwe testdata
+
+Door technische problemen met de huidige testomgeving lukte het niet om de testdata in te laden, de testdata moest dus handmatig in een database gezet worden. Dit werd gedaan door een Python-script dat random getallen genereerd en dan naar een bestand schrijft, dit bestand moet dan via de InfluxDB UI ingegegven worden. De random getallen zijn gebaseerd op realistische waarden van temperatuur, luchtdruk, luchtvochtigheid, etc ...
+
+```python
+import random
+from datetime import datetime, timedelta
+filename = "testdata.csv"
+file = open(filename, "w")
+sb = ""
+for i in range(10000):
+    temp = round(24 + random.uniform(0, 1) * (28 - 24), 1)
+    humidity = random.randint(75, 83)
+    wind_speed = round(1 + random.uniform(0, 1) * (4 - 1), 1)
+    wind_gusts = round(3 + random.uniform(0, 1) * (8 - 3), 1)
+    wind_direction = random.randint(50, 100)
+    rain = round(50 + random.uniform(0, 1) * (100 - 50), 1)
+    currentTime = datetime.now()
+    prevTime = currentTime - timedelta(seconds=(10000 - i))
+    epochSeconds = prevTime.timestamp()
+    timestamp = str(int(epochSeconds)) + "000000000"
+    line = f"TestMeasurement temp={temp},humidity={humidity},wind_speed={wind_speed},wind_gust={wind_gusts},wind_direction={wind_direction},rain={rain} {timestamp}\n"
+    sb += line
+file.write(sb)
+```
+
+Dit script genereerd een .csv bestand dat 10000 lijnen testdata bevat. Hoe de timestamp gegenereerd wordt zal nog aangepast moeten worden zodat de data meer verspreid is, momentaal maakt het script data dat om de seconde verandert, dit is niet realistisch (maar momenteel voldoende om verder mee te werken voor het dashboard).
+
+Om dit bestand dan in te laden zal in de InfluxDB UI bij "Line protocol" het bestand moeten uploaden.
+
+![InfluxDB Load Data.](./assets/influxdb-ui-load-data.png "Figuur 1: Het inladen van data met InfluxDb.")
+
+![InfluxDB Line Protocol.](./assets/influxdb-ui-line-protocol.png "Figuur 2: Selecteren van line protocol.")
+
+![InfluxDB Select File.](./assets/influxdb-ui-select-file.png "Figuur 3: De file uploaden naar de database.")
