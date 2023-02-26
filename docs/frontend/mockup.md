@@ -7,3 +7,5 @@ Om de frontend wat meer te visualiseren is er een mock-up gemaakt van het Grafan
 Het is de bedoeling dat er een panel gemaakt zal worden voor iedere gemeten waarden (neerslag, temperatuur, luchtvochtigheid, etc...). Dit zal een duidelijker overzicht geven van de verschillende weerstations en sensors.
 
 Het grootste verschil in tegenstelling tot het huidige dashboard is dat er niet meer voor elk weerstation één panel zal zijn met alle metingen erop, maar dat er bijvoorbeeld een panel is voor de temperatuur waar de metingen van alle weerstations in zullen staan.
+
+![Grafana Dashboard Mock-Up.](./assets/grafana-dashboard-mock-up.png 'Figuur 1: Grafana Data Sources web interface pagina.')
