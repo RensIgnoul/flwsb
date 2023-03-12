@@ -139,31 +139,72 @@ system_stats = client.query_api().query_data_frame(org=my_org, query=query)
 
 Door technische problemen met de huidige testomgeving lukte het niet om de testdata in te laden, de testdata moest dus handmatig in een database gezet worden. Dit werd gedaan door een Python-script dat random getallen genereerd en dan naar een bestand schrijft, dit bestand moet dan via de InfluxDB UI ingegegven worden. De random getallen zijn gebaseerd op realistische waarden van temperatuur, luchtdruk, luchtvochtigheid, etc ...
 
+Er werd hetzelfde gebruikt voor het genereren van testdata voor de sensoren.
+
 ```python
 import random
 from datetime import datetime, timedelta
+
 filename = "testdata.csv"
-file = open(filename, "w")
+file = open(filename, "w") 
 sb = ""
-for i in range(10000):
-    temp = round(24 + random.uniform(0, 1) * (28 - 24), 1)
-    humidity = random.randint(75, 83)
-    wind_speed = round(1 + random.uniform(0, 1) * (4 - 1), 1)
-    wind_gusts = round(3 + random.uniform(0, 1) * (8 - 3), 1)
-    wind_direction = random.randint(50, 100)
-    rain = round(50 + random.uniform(0, 1) * (100 - 50), 1)
-    currentTime = datetime.now()
-    prevTime = currentTime - timedelta(seconds=(10000 - i))
-    epochSeconds = prevTime.timestamp()
-    timestamp = str(int(epochSeconds)) + "000000000"
-    line = f"TestMeasurement temp={temp},humidity={humidity},wind_speed={wind_speed},wind_gust={wind_gusts},wind_direction={wind_direction},rain={rain} {timestamp}\n"
-    sb += line
+
+for i in range(5):
+    for j in range(1000):
+        temperature = round(random.uniform(24, 28), 1)
+        humidity = random.randint(75, 83)
+        wind_speed = round(random.uniform(1, 4), 1)
+        wind_gusts = round(random.uniform(3, 8), 1)
+        wind_direction = random.randint(50, 100)
+        rain = round(random.uniform(50, 100), 1)
+        source_nr = random.randint(0, 4)
+
+        currentTime = datetime.now()
+        prevTime = currentTime - timedelta(seconds=(3600*j))
+        timestamp = str(int(epochSeconds)) + "000000000"
+
+        line = f"TestMeasurement,source={i} temp={temp},humidity={humidity},wind_speed={wind_speed},wind_gust={wind_gust},wind_direction={wind_direction},rain={rain} {timestamp}"
+        sb += line
+
 file.write(sb)
 ```
 
-Dit script genereerd een .csv bestand dat 10000 lijnen testdata bevat. Hoe de timestamp gegenereerd wordt zal nog aangepast moeten worden zodat de data meer verspreid is, momentaal maakt het script data dat om de seconde verandert, dit is niet realistisch (maar momenteel voldoende om verder mee te werken voor het dashboard).
+```python
+import random
+from datetime import datetime, timedelta
 
-Om dit bestand dan in te laden zal in de InfluxDB UI bij "Line protocol" het bestand moeten uploaden.
+filename = "testdata_sensor.csv"
+
+file = open(filename, "w")
+sb = ""
+
+for i in range(5):
+    for j in range(1000):
+        voc = random.randint(0,500)
+        nox = random.randint(0,500)
+        ppm = round(random.uniform(0,1000),2)
+        co2 = round(random.uniform(400,5000),2)
+        air_pressure = round(random.uniform(300,1100),2)
+        temp = round(random.uniform(-40,85),2)
+        humidity = round(random.uniform(0,100),2)
+        particles = round(random.uniform(0,1000),2)
+        idNr = random.randint(0,4) 
+
+        currentTime = datetime.now()
+        prevTime = currentTime - timedelta(seconds=(3600*j))
+        epochSeconds = prevTime.timestamp()
+        timestamp = str(int(epochSeconds)) + "000000000"
+
+        line = f"TestMeasurementSensor,id={i} VOC={voc},NOx={nox},PPM={ppm},CO2={co2},air_pressure={air_pressure},temp={temp},humidity={humidity},particles={particles} {timestamp}\n"
+
+        sb += line
+
+file.write(sb)
+```
+
+Deze scripts genereren 2 .csv bestanden dat 1000 lijnen testdata bevatten. Hoe de timestamp gegenereerd wordt kan nog aangepast moeten worden zodat de data meer/minder verspreid is.
+
+Om deze bestanden dan in te laden zal in de InfluxDB UI bij "Line protocol" het bestand moeten uploaden.
 
 ![InfluxDB Load Data.](./assets/influxdb-ui-load-data.png "Figuur 1: Het inladen van data met InfluxDb.")
 

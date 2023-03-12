@@ -72,6 +72,8 @@
 
   * [Mock-up](frontend/mockup.md)
 
+  * [Grafana Dashboards](frontend/grafana-dashboard.md)
+
 * Future Iterations
 
   * [Improvements](future-iterations/improvements.md)
